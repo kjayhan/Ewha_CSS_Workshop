@@ -9,3 +9,5 @@ Live visualization workshop: [Nov 5](https://twitter.com/patrickbloniasz/status/
 For more, see [Dr. Mine Dogucu's website](https://www.learnr4free.com/en/index.html)
 
 On Computational Social Science: [Bit by Bit](https://www.bitbybitbook.com/en/1st-ed/preface/)
+
+Twitter: [Apply for Twitter's Academic API](https://developer.twitter.com/en/products/twitter-api/academic-research)
