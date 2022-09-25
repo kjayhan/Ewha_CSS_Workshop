@@ -1,0 +1,323 @@
+---
+title: "R Practice: Data visualization with ggplot2"
+author: "EWHA-GSIS Computational Social Science Workshop"
+date: "2022-09-24"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.align = 'center', warning = F, message=F)
+```
+
+You can download cheetsheet for ggplot2! (<https://www.rstudio.com/resources/cheatsheets/>)
+
+## Example: Gapminder dataset
+
+We will use a subset of the gapminder data (<https://www.gapminder.org/data/>, <https://cran.r-project.org/web/packages/gapminder/README.html>). 
+At the website <https://www.gapminder.org/data/>, you can collect more variables. 
+
+
+### Load the dataset
+
+```{r, message=FALSE}
+library(gapminder)
+library(dplyr)
+library(ggplot2)
+
+head(gapminder) ## format: tibble 
+str(gapminder)
+
+```
+The variables in the dataset:
+
+- `country`: Country name
+- `continent`: Continent
+- `year`: Year
+- `lifeExp`: Life expectancy at birth, in years
+- `pop`: Population
+- `gdpPercap`: GDP per capita (US$, inflation-adjusted)
+
+
+
+We can extract a subset for year = 2007:  
+
+```{r}
+gapminder_2007 = gapminder %>%filter(year =='2007')
+head(as.data.frame(gapminder_2007)) 
+dim(gapminder_2007)
+```
+
+> __Question 1__: Plot a bar chart to understand the frequency distribution of countries by continent.
+
+__Hint__: For making bar chart, use `geom_bar()`.
+    
+__Answer__: 
+
+```{r,echo=TRUE}
+ggplot(data=gapminder_2007, aes(x=continent, fill=continent))+geom_bar()
+```
+
+
+> __Question 2__: How can we visualize the probability distribution of life expectancy by continent?
+
+
+__Hint__: For continuous variables, a histogram or density plot is useful. 
+    
+__Answer__: 
+
+```{r,echo=TRUE}
+# histogram (overlap)
+ggplot(data= gapminder_2007, aes(x=lifeExp, fill=continent))+geom_histogram(alpha=0.5)
+
+# histogram (facet_wrap)
+ggplot(data=gapminder_2007, aes(x=lifeExp, fill=continent))+geom_histogram(binwidth = 5)+ facet_wrap(~continent)
+
+# density plot
+ggplot(data= gapminder_2007, aes(x=lifeExp, fill=continent))+geom_density(alpha=0.2)
+```
+
+
+Now, we can extract only European countries from the full data:  
+
+```{r}
+europe = gapminder %>%filter(continent =='Europe')
+head(as.data.frame(europe)) 
+dim(europe)
+```
+
+> __Question 3__: Plot the boxplot of the Life expentency over time. 
+
+
+__Hint__: Use `geom_boxplot()`
+    
+__Answer__: 
+```{r, echo=TRUE}
+  europe %>% 
+  ggplot(aes(as.factor(year), lifeExp)) + geom_boxplot(outlier.size = .5) + 
+  scale_x_discrete(breaks=seq(1950, 2010, 10)) + 
+  ggtitle("Europe: Life expentency") +
+  xlab("Year") +
+  ylab("Life expectancy at birth, in years")
+```  
+ 
+ 
+> __Question 4__: We need to investigate the relationship between 'gdpPercap' and 'lifeExp'. Draw the scattor plot (xaxis: 'gdpPercap';  yaxis:'lifeExp'). 
+
+
+__Hint__: Use `geom_point`
+    
+__Answer__: 
+```{r, echo=TRUE}
+  europe %>% 
+  ggplot(aes(x=gdpPercap, y=lifeExp))+geom_point()
+
+  ## x-axis: log transformation of gdpPercap 
+  europe %>% 
+  ggplot(aes(x=log(gdpPercap), y=lifeExp))+geom_point()
+```   
+
+
+
+
+
+> __Question 5__: For Year = 2007, can we sort the European countries by 'LifeExp'? 
+Cleveland dot plot is useful. 
+
+__Hint__: Use `geom_point`
+    
+__Answer__: 
+```{r, echo=TRUE}
+
+## Cleveland dot chart
+
+europe %>%
+  filter(year == 2007) %>%
+  ggplot( aes(x= lifeExp, y = reorder(country,lifeExp))) +
+  geom_point()
+```
+
+
+> __Question 6__: Using more detail options, try to draw following fancy figure!
+
+__Hint__: `geom_point`, `scale_size`, `theme_minimal`, `labs` are used. 
+    
+__Answer__: 
+
+```{r, echo=TRUE}
+gapminder %>%
+  filter(year == 2007) %>%
+  ggplot(aes(x = gdpPercap, y = lifeExp, size = pop, fill = continent)) +
+  geom_point(alpha = 0.5, shape = 21, color = "black") + 
+  scale_size(range = c(1, 17), name = "Population") +
+  theme_minimal() + 
+  labs(
+    title = "Scatter Plot", 
+    subtitle = "Life Expectancy vs. GDP per Capita", 
+    y = "Life Expectancy", 
+    x = "GDP per Capita", 
+    caption = "Source: gapminder"
+  )
+```
+
+
+## Example: Bike store sales in Europe
+
+Refer <https://www.kaggle.com/datasets/sadiqshah/bike-sales-in-europe?resource=download>.
+
+```{r, echo=TRUE}
+library(tidyverse)
+library(ggmosaic)
+
+sales<- read.csv("sales2.csv") # Bike Sales in Europe
+head(sales)
+dim(sales)
+summary(sales)
+
+```
+
+
+
+
+The variables in the dataset:
+
+- `Date`: Date of the order
+- `Day`: Day of the order
+- `Month`: Month of the order
+- `Year`: Year of the order
+- `Customer_Age`: The Age of customer
+- `Age_Group`: Age range for the customer
+- `Customer_Gender` : The customer gender
+- `Country`: The country where the order was made
+- `State`: The state where the order was made
+- `Product_Category`: Product category for each order
+- `Sub_Category`: Product sub category for each order
+- `Product`: The product for each order
+- `Order_Quantity`: Quantity of the product
+- `Unit_Cost`:  Cost of inventory holding cost  
+- `Unit_Price`: The price of the product
+- `Profit`: Nett profit of each order 
+- `Cost`: The sum cost of all product for each order 
+- `Revenue`: Total revenue of each order  
+
+
+
+> __Question 7__: How can we visualize the proportion of sales by country and product_category?
+
+__Hint__: use the function `geom_mosaic`.
+    
+__Answer__: 
+
+```{r, echo=TRUE}
+ggplot(sales)+ geom_mosaic(aes(x=product(Country), weight=Revenue, fill=Product_Category))
+```
+
+
+
+
+> __Question 8__: Mean comparison: Is there significant differences in the average profit by customer age group? 
+
+__Hint__: Use the following the data and the functions `geom_bar`, `geom_errorbar`. 
+   
+
+
+```{r}
+# use aggregate
+bike.summary <- aggregate(Profit ~ Age_Group, data = sales, FUN = mean) 
+bike.sd<-aggregate(Profit ~ Age_Group, data = sales, FUN = sd)[,2]
+bike.n<-aggregate(Profit ~ Age_Group, data = sales, FUN = length)[,2]
+bike.se<-bike.sd/sqrt(bike.n)
+
+bike.summary$lower<- bike.summary$Profit - 1.96*bike.se
+bike.summary$upper<- bike.summary$Profit + 1.96*bike.se
+
+bike.summary
+```
+
+__Answer__: 
+
+
+```{r, echo=TRUE}
+# use aggregate
+ggplot(data = bike.summary, aes(y = Profit, x = Age_Group)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  ylab("Average Profit") + 
+  xlab("Age Group") + 
+  geom_errorbar(aes(ymin=lower, ymax=upper), 
+              width=.2,                    # Width of the error bars
+              position=position_dodge(0.9))
+
+```
+
+
+
+> __Question 9__: How can we check the linear association between cost and profit?
+
+__Hint__: Use the function `geom_smooth`.
+    
+    
+__Answer__: 
+
+```{r, echo=TRUE}
+ggplot(sales, aes(x=Cost, y=Profit))+ 
+  geom_point() + # Adds points (scatterplot)
+  geom_smooth(method = "lm") + # Adds regression lines
+  ylab("Profit") + # Changes y-axis label
+  xlab("Cost")  # Changes x-axis label
+
+```
+
+## Word cloud
+### Winston Churchill’s Speech (https://www.americanrhetoric.com/speeches/winstonchurchillunitedstatesofeurope.htm)
+
+
+
+
+
+
+```{r}
+library(wordcloud)
+library(tm)
+text<-readLines("Churchill_speech.txt")
+
+# Load the data as a corpus
+churchill <- Corpus(VectorSource(text))
+
+inspect(churchill[1:3])
+
+# Convert the text to lower case
+churchill <- tm_map(churchill, content_transformer(tolower))
+# Remove numbers
+churchill <- tm_map(churchill, removeNumbers)
+# Remove english common stopwords
+churchill <- tm_map(churchill, removeWords, c("the","and","will","for","are","that",
+                                                "but","and","have","with","from","our", 
+                                              "there","this","which","must","their"))
+# Remove punctuations
+churchill <- tm_map(churchill, removePunctuation)
+# Eliminate extra white spaces
+churchill <- tm_map(churchill, stripWhitespace)
+
+
+churchill.dtm <- TermDocumentMatrix(churchill)
+churchill.mat <- as.matrix(churchill.dtm)
+v <- sort(rowSums(churchill.mat),decreasing=TRUE)
+d <- data.frame(word = names(v),freq=v)
+head(d, 10)
+
+set.seed(1234)
+wordcloud(words = d$word, freq = d$freq, min.freq = 2, scale=c(3,0.5),
+          max.words=200, random.order=FALSE, rot.per=0.35,
+          colors=brewer.pal(8, "Dark2"))
+
+```
+
+
+
+
+
+
+
+

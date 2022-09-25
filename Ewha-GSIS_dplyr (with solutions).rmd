@@ -1,0 +1,245 @@
+---
+title: "R Practice: Data wrangling with dplyr"
+author: "EWHA-GSIS Computational Social Science Workshop"
+date: "2022-09-24"
+output:
+  html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(include = FALSE, fig.align = 'center', warning = F, message=F)
+```
+
+## Supplementary learning materials
+
+* Cheetsheet for dplyr! (<https://www.rstudio.com/resources/cheatsheets/>)
+* Ch5. Data transformation in R for Data Science (<https://r4ds.had.co.nz/transform.html>)
+
+
+## What is dplyr? 
+
+When you import your own data into R (probably using the `readr` package in `tidyverse`), it is rare that you get the data in the desired form you need for your data visualization and data modeling. The dplyr package provides a set of functions to transform or manipulate your data into the right form you need.
+
+The official tidyverse website (<https://dplyr.tidyverse.org/index.html>) introduces the `dplyr` package as follows:
+
+"`dplyr` is a grammar of data manipulation, providing a consistent set of verbs that help you solve the most common data manipulation challenges:
+
+* `mutate()` adds new variables that are functions of existing variables
+* `select()` picks variables based on their names.
+* `filter()` picks cases based on their values.
+* `summarise()` reduces multiple values down to a single summary.
+* `arrange()` changes the ordering of the rows.
+
+These all combine naturally with `group_by()` which allows you to perform any operation “by group”. 
+
+The usage of functions in the dplyr is 
+* verb(a data frame, what to do with the data frame)
+* e.g., `filter(flights, month == 1)` # filter the flights data frame to select all flights that departed on Jan. 
+
+
+
+## Section 1 
+
+#### Load the dataset
+
+```{r, include=TRUE}
+library(tidyverse) # load core tidyverse packages
+library(gapminder) 
+```
+
+```{r, include=TRUE}
+# head() display the first 6 observations
+head(gapminder)
+```
+
+
+```{r, include=TRUE}
+# str() display the structure of the dataset (more precisely the list)
+# for more information on the gapminder data, type `?gapminder` in your console
+str(gapminder)
+```
+
+#### Problem 1
+
+The unit of `lifeExp` is year. Using `mutate()`, create a dataset named `my_gapminder` that contains a new variable `lifeExp_month` representing the life expectancy in month.  
+
+```{r}
+my_gapminder <- gapminder %>%
+  mutate(lifeExp_month = lifeExp*12)
+my_gapminder
+```
+
+#### Problem 2
+
+From the `my_gapminder` dataset, using `select()`, select only the variables (or columns) `country`, `continent`, `year`, `gdpPerCap`, and `lifeExp_month` (please use `my_gapminder` as the new dataset with selected variables)
+
+
+```{r}
+my_gapminder <- my_gapminder %>%
+  select(country, continent, year, gdpPercap, lifeExp_month)
+my_gapminder
+```
+
+
+
+#### Problem 3
+
+Using `filter()`, select only countries in Asia from the `my_gapminder` dataset. 
+
+```{r}
+my_gapminder <- my_gapminder %>%
+  filter(continent == "Asia")
+my_gapminder
+```
+
+
+#### Problem 4
+
+Using `arrange()`, arrange the `my_gapminder` dataset based on `lifeExp_month` in descending order. In which year and which country, the lifeExp is maximum?
+
+
+```{r}
+# Answer : Japan, 2007
+my_gapminder %>%
+  arrange(desc(lifeExp_month))
+```
+
+#### Problem 5
+
+Using `summarize()` and `group_by()`, calculate the mean of the `lifeExp_month` of each country. Then, using `arrange()` find a country with the longest life expectancy. 
+
+
+```{r}
+# Answer : Japan
+my_gapminder %>%
+  group_by(country) %>%
+  summarize(m_lifeExp = mean(lifeExp_month)) %>%
+  arrange(desc(m_lifeExp))
+```
+
+
+
+## Section 2
+
+#### Load the dataset
+
+A `starwars` is a tibble in `dplyr` containing 13 variables about the features of 13 characters in the movie.
+
+
+```{r, include=TRUE}
+# tibble doesn't need head()
+# for more information, type `?starwars` in your console
+starwars
+```
+
+```{r, include=TRUE}
+# similar to str() in Base R
+glimpse(starwars)
+```
+
+
+#### Problem 1
+
+
+How many humans are contained in `starwars`? (Hint. use `count()`, for more information type `?count`)
+
+```{r}
+# Answer : 35
+starwars %>%
+  filter(species == "Human") %>%
+  count()
+```
+
+```{r}
+# Another way to get the same answer
+starwars %>%
+  count(species)
+```
+
+
+
+
+#### Problem 2
+
+
+How many feminine humans are contained in `starwars`?
+
+
+```{r}
+# Answer : 9
+starwars %>%
+  group_by(gender, species) %>%
+  count()
+```
+
+
+#### Problem 3
+
+From which homeworld do the most individuals come from?
+
+
+```{r}
+# Answer : Naboo
+starwars %>%
+  group_by(homeworld) %>%
+  count() %>%
+  arrange(desc(n))
+```
+
+#### Problem 4
+
+What is the mean height of all individuals with orange eyes from the most popular homeworld?
+
+
+```{r}
+# Answer : 208.6667
+starwars %>%
+   filter(homeworld == "Naboo", eye_color == "orange") %>%
+   summarise(mean_height = mean(height))
+```
+
+
+
+## Section 3
+
+#### Load the dataset
+
+
+A `diamonds` dataset in `ggplot` package contains the prices and other attributes of almost 54,000 diamonds. (Type `?diamonds` for more details on the dataset)
+
+
+```{r, include=TRUE}
+diamonds
+```
+
+
+#### Problem 1
+
+What is the size of the biggest diamond in `carat` among the diamonds with `color` E, `clarity` VS2, and the `price` range between 5000 and 10000? 
+
+```{r}
+# Answer :  1.34	
+diamonds %>%
+  filter(color == "E", clarity == "VS2", price >= 5000, price <= 10000) %>%
+  arrange(desc(carat))
+```
+
+#### Problem 2
+
+What is the lowest `price` for the diamonds with cutting quality(`cut`) Ideal and clarity(`clarity`) IF? 
+
+
+
+```{r}
+# Answer : 468
+diamonds %>%
+  filter(cut == "Ideal", clarity == "IF") %>%
+  arrange(price)
+
+```
+
+
+
+
+
+
