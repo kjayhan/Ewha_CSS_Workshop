@@ -1,4 +1,3 @@
-# Ewha_CSS_Workshop
 Ewha GSIS Computational Social Science Workshop
 
 Nov'22 Workshop Program is available here: https://docs.google.com/document/d/1pX-B_qKDJzx1DgzKeMCrBFuwY7pUyAcMpLvfOaYdFZU/edit?usp=sharing
