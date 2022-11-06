@@ -1,4 +1,4 @@
-Ewha GSIS Computational Social Science Workshop organized by [Kadir Jun Ayhan](https:://kjayhan.github.io)
+Ewha GSIS Computational Social Science Workshop organized by [Kadir Jun Ayhan](https://kjayhan.github.io)
 
 Nov'22 Workshop Program is available [here](https://docs.google.com/document/d/1pX-B_qKDJzx1DgzKeMCrBFuwY7pUyAcMpLvfOaYdFZU/edit?usp=sharing)
 
