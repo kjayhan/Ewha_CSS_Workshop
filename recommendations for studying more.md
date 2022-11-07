@@ -13,3 +13,5 @@ For more free R books, see [Dr. Mine Dogucu's website](https://www.learnr4free.c
 Twitter: [Apply for Twitter's Academic API](https://developer.twitter.com/en/products/twitter-api/academic-research)
 
 A Guide for a CSS Career: [A Three-Step Guide to Training Computational Social Science Ph.D. Students for Academic and Non-Academic Careers](https://osf.io/preprints/socarxiv/kgjn2/)
+
+Learning: [Live R course for beginners](https://twitter.com/patrickbloniasz/status/1589346582205341696?s=46&t=kPi244_m90MZBdthH4e_bg)
