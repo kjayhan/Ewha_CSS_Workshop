@@ -1,0 +1,387 @@
+---
+title: "R practice: Linear Regression"
+author: "EWHA-GSIS Computational Social Science Workshop"
+date: "2022-11-19"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, root.dir="/Users/donghwan/Dropbox/Teaching/20221119_Ewha_GSIS_LM", 
+fig.align = 'center', warning = F, message=F)
+```
+
+# Getting started
+
+### Install R and RStudio
+To install R on your computer,
+go to the website of R <http://www.r-project.org/> and install it.
+To use RStudio layout, go to <http://www.rstudio.org/> and download it. 
+
+### Working directory 
+
+You can check the folder on your computer
+in which you are currently working. 
+```{r wd}
+getwd()
+```
+
+Type in the command window: `setwd("Your directory name")`
+
+
+### Packages 
+
+There are many packages available on the website. 
+If you want to install and use a package (for example, the package named “ggplot2”)
+
+* Install the package:type `install.packages("ggplot2")`
+
+* Load the package:  type `library("ggplot2")` in the
+command window.
+
+# Some Examples of R commands
+
+$>$ 	Indicate the prompt at the start of new line
+
+$\#$	Comment operator 
+
+$<-$ 	Assignment operator 
+
+$==$	Boolean equality operator 
+
+
+Ex. 
+
+```{r}
+x<-5     # assign the value 5 to x
+x==5    # returns TRUE
+x = 6    # same to <-
+x==5    # returns FALSE
+```
+
+### Arithmatic operator 
+```{r}
+3+3
+17/3 
+2^3
+17%/%3 
+17%%3 
+5/2
+
+```
+
+### Logical operator (return TRUE or FALSE)
+
+```{r}
+a<-10; b<-5
+a>b
+a!=5
+(5>4)&(8>10)
+```
+
+### Basic mathematical functions
+
+```{r}
+sqrt(16); abs(-2); log(10); exp(2)
+
+
+floor(4.9); ceiling(4.1); round(1.583,3)
+```
+
+### Vectors 
+
+
+```{r}
+x<-c(1,2,3,4,5); y<-c(1:10); z<-rep(1,5); 
+x2<-seq(1,9,by=2); abc<-c("LEE","KIM","PARK");
+x3<-c(x,y); 
+length(x); min(x); max(x); sum(x); prod(x)
+x+x2 # vector plus vector
+x[3]; x[3:4]; x[-2] # specific element of vector
+```
+
+### Matrices
+
+```{r}
+X<-matrix(c(1:10),5,2)
+X2<-matrix(c(1:10),5,2,byrow=TRUE)
+
+dim(X); t(X); t(X)%*%X; solve(t(X)%*%X)
+X[,1]; X[2:3,]; X[3,2]
+
+x1<-rep(1,5)
+x2<-c(1,2,3,4,5)
+
+X<-cbind(x1,x2)
+X2<-rbind(x1,x2)
+
+diag(1:5); diag(5)
+```
+
+### Data frame 
+
+```{r}
+Y<-c(1,2,3,4)
+X<-matrix(c(1,1,1,1,1.2,1.5,2,2.5),4,2)
+
+Data<-data.frame(X,Y)
+Data
+```
+
+### Plots
+
+R can make various plots: 
+
+```{r}
+x<-rnorm(100) ## random number generation from N(0,1)
+plot(x)
+hist(x)
+```
+
+
+\pagebreak 
+
+
+# Regression: Statistical modeling 
+
+## Regression? 
+
+Francis Galton: "Regress (toward the mean)"
+
+- The concept of regression comes from genetics and was popularized by Sir Francis Galton during the late 19th century with the publication of "Regression towards mediocrity in hereditary stature". 
+
+- Galton observed that extreme characteristics (e.g., height) in parents are not passed on completely to their offspring. Rather, the characteristics in the offspring regress towards a mediocre point (a point which has since been identified as the mean) (from  *Wikipedia* }
+
+- Regression (in modern sense) :  Statistical methodology for modeling a functional relationship between **predictor** variable (input, independent variable)  and  **response** variable (outcome, dependent variable) 
+Ex. profit - advertising rate, stock price - weather, etc.
+
+
+#### Main goals: 
+
+1. Understanding and Finding the relationship between predictor and response (**Estimation**)
+
+2. Predicting the future response with the new observed predictor (**Prediction**)  
+
+
+#### Basic concepts
+
+Suppose that we observe the predictor $X$ and response $Y$. We want to construct a reasonable function such that 
+$$
+Y \approx f(X)
+$$
+However, in real world, there is noisy. We want to establish
+$$
+Y = f(X) + \epsilon
+$$
+
+A regression model is a formal means of expressing the two essential ingredients of a statistical relation: 
+
+1. A tendency of the response variable $Y$ to vary with the
+predictor variable $X$ in a systematic fashion.
+
+2. A scattering of points around the curve of statistical
+relationship.
+
+#### Linear Regression model 
+
+Simple form of $f(X)?$ $f(X) = \beta_0 + \beta_1 X$ (regression line)
+
+$$
+Y = \beta_0 + \beta_1 X + \epsilon
+$$
+
+![Fig 1. Graph of $E(Y|X=x)=\beta_0 + \beta_1x$](https://user-images.githubusercontent.com/66044830/202312992-dac5f314-4f1a-4b8d-94f0-71ad44fd8c76.jpg){width=50%}
+
+
+## Example: Simple linear regression 
+
+```{r,message=F,warning=F}
+library(ggplot2)
+library(modelr)
+options(na.action = na.warn)
+## sim1: synthetic data
+head(sim1)
+```
+
+
+```{r}
+ggplot(sim1, aes(x,y)) + geom_point()
+```
+
+> __Question 1__: How to construct the (optimal) regression line? 
+
+```{r, message=F}
+library(gridExtra)
+g1=ggplot(sim1, aes(x, y)) + geom_point(size = 2, colour = "grey30") + geom_abline(intercept = mean(sim1$y), slope = 0) + ggtitle("Method 1")
+g2 = ggplot(sim1, aes(x,y)) + geom_point(size = 2, colour = "grey30") + geom_smooth(method = "lm", se= FALSE) + ggtitle("Method 2")
+
+grid.arrange(g1,g2,ncol=2) 
+```
+
+
+$\Rightarrow$ Method 2 is better? Yes! 
+
+#### Ordinary Least Square (OLS) method 
+
+We find the unknown parameters $\beta_0$ and $\beta_1$ by minimizing 
+$$
+Q = \sum_{i=1}^n [Y_i - (\beta_0 + \beta_1 X_i) ]^2
+$$
+
+![Fig 2. OLS estimation](https://user-images.githubusercontent.com/66044830/202312805-4baad9bf-bdde-42b0-a066-da22b8ec2a70.jpg){width=50%}
+
+
+#### Optimal estimates 
+
+```{r}
+fit<- lm(y~x, data=sim1)
+summary(fit)$coef
+
+```
+
+#### Fitting equation
+```{r}
+
+b0 <- round(fit$coefficients[[1]],2)
+b1 <- round(fit$coefficients[[2]],2)
+
+eq <- paste("y = ",b0," + ", b1, "x ")
+eq
+
+g2
+```
+
+
+
+## Example: Gapminder dataset
+
+We will use a subset of the gapminder data (<https://www.gapminder.org/data/>, <https://cran.r-project.org/web/packages/gapminder/README.html>). 
+At the website <https://www.gapminder.org/data/>, you can collect more variables. 
+
+```{r}
+library(gapminder)
+library(ggplot2)
+library(dplyr)
+library(MASS)
+library(leaps)
+```
+
+```{r}
+head(gapminder)
+str(gapminder)
+```
+
+The variables in the dataset:
+
+* country : Country name
+* continent : Continent
+* year : Year
+* lifeExp : Life expectancy at birth, in years pop : Population
+* gdpPercap : GDP per capita (US$, inflation-adjusted)
+
+### Filtering: 
+```{r}
+europe= gapminder %>% filter(continent=="Europe" & year==2007)
+head(as.data.frame(europe))
+```
+
+
+
+> __Question 2__: Can we explain (or predict) the life expectancy using gdpPercap variable? 
+
+```{r}
+europe %>% ggplot(aes(x=gdpPercap, y=lifeExp))+geom_point()
+```
+
+
+### Linear regression fit: 
+
+```{r}
+europe %>% ggplot(aes(x=gdpPercap, y=lifeExp))+geom_point()+
+  stat_smooth(method = "lm", col = "red") 
+```
+
+```{r}
+fit <- lm(lifeExp~gdpPercap, data=europe)
+summary(fit)
+fit$coefficients[[2]]*10000
+```
+
+**Interpretation:** We can say:
+"If the GDP increases by $10,000, life expectancy increases by 2.146 years."
+
+
+> __Question 3__: Assume that a new European country has gdpPercap=20,000. 
+Can we predict the lifeExp of this country? How can compute the 
+95% Prediction interval? 
+
+```{r}
+#### predict using new observation : gdpPercap = 20,000
+predict.lm(fit, newdata=data.frame(gdpPercap=20,000), interval="prediction")
+
+
+```
+
+
+
+
+## Example: Bike store sales in Europe
+Refer https://www.kaggle.com/code/alaaalghmdi/bike-sales-eda-prediction-step-by-step
+
+
+```{r,message=F,warning=F}
+library(tidyverse)
+library(car)
+library(dplyr)
+library(MASS)
+
+sales = read.csv("Sales.csv")
+head(sales)
+
+dim(sales)
+
+```
+The variables in the dataset:
+
+* `Date` : Date of the order
+* `Day` : Day of the order
+* `Month` : Month of the order
+* `Year` : Year of the order
+* `Customer_Age` : The Age of customer
+* `Age_Group` : Age range for the customer
+* `Customer_Gender` : The customer gender
+* `Country` : The country where the order was made
+* `State` : The state where the order was made
+* `Product_Category` : Product category for each order
+* `Sub_Category` : Product sub category for each order
+* `Product` : The product for each order
+* `Order_Quantity` : Quantity of the product
+* `Unit_Cost` : Cost of inventory holding cost
+* `Unit_Price` : The price of the product
+* `Profit` : Net profit of each order
+* `Cost` : The sum cost of all product for each order
+* `Revenue` : Total revenue of each order
+
+
+> __Question 4__: Build the regression model to predict `Profit` by using `Year`, `Customer_Age`, `Customer_Gender`, `Country`, `Product_Category`, `Cost` and etc. 
+
+
+
+```{r,message=F}
+
+fit <- lm(Profit ~Year + Customer_Age + Customer_Gender + Country + Product_Category + Cost ,data = sales)
+summary(fit)
+```
+
+> __Question 5__: Predict the profit with the predictors. 
+
+```{r}
+#### predict using new observation : gdpPercap = 20,000
+predict.lm(fit, newdata=data.frame(Year=2016, Customer_Age = 30, Customer_Gender ="F", 
+                                   Country = "Germany", Product_Category="Bikes",
+                                   Cost = 500), interval="prediction")
+
+
+```
