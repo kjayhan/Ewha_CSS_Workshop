@@ -6,6 +6,8 @@ Book on Computational Social Science: [Bit by Bit](https://www.bitbybitbook.com/
 
 Course: [Harvard on Edx - Data Science: R Basics](https://www.edx.org/course/data-science-r-basics)
 
+[8-week R course with great best-practices tips](https://www.stephaniehicks.com/jhustatcomputing2022/schedule) by [Stephanie Hicks](https://www.stephaniehicks.com/)
+
 Hands-on-practice: [Datacamp](https://www.datacamp.com)
 
 For more free R books, see [Dr. Mine Dogucu's website](https://www.learnr4free.com/en/index.html)
