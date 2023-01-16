@@ -1,4 +1,4 @@
-R Book: [R for Data Science](https://r4ds.had.co.nz/)
+R Book: [R for Data Science](https://r4ds.had.co.nz/) by [Hadley Wickham](https://hadley.nz), [Mine Çetinkaya-Rundel](https://mine-cr.com/), and [Garrett Grolemund](https://www.rstudio.com/authors/garrett-grolemund/).
 
 Data Visualization Book: [Hands-on Data Visualization](https://handsondataviz.org/)
 
