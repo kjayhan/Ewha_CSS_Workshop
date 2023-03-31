@@ -1,0 +1,280 @@
+---
+title: "GSIS CSS Workshop (dplyr practice)"
+author: "Sunbok Lee"
+date: 2023-4-1
+output: html_document
+---
+
+
+## What is Tidyverse? 
+
+The tidyverse is the collection of R packages designed for data science. 
+
+https://www.tidyverse.org/
+
+
+## Wonderful Resources for learning R
+
+R for Data Science : https://r4ds.had.co.nz/index.html
+
+RStudio Cheatsheet : https://support--rstudio-com.netlify.app/resources/cheatsheets/
+
+
+## What is the dplyr package?
+
+The dplyr package is the tidyverse package for data transformation. 
+
+https://dplyr.tidyverse.org/
+
+
+## The pipe operator 
+
+Pipes are a powerful tool for clearly expressing a sequence of multiple operations. 
+
+https://r4ds.had.co.nz/pipes.html
+
+
+## Practice Example
+
+### Read data
+
+```{r}
+# load core tidyverse packages 
+library(tidyverse)
+```
+
+```{r}
+# Get the Data
+
+# https://github.com/rfordatascience/tidytuesday/tree/master/data/2022/2022-07-12
+
+# Read in with tidytuesdayR package 
+# Install from CRAN via: install.packages("tidytuesdayR")
+# This loads the readme and all the datasets for the week of interest
+
+# Either ISO-8601 date or year/week works!
+
+tuesdata <- tidytuesdayR::tt_load('2022-07-12')
+tuesdata <- tidytuesdayR::tt_load(2022, week = 28)
+
+flights <- tuesdata$flights
+
+# Or read in the data manually
+
+flights <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-07-12/flights.csv')
+```
+
+
+```{r}
+# check variables in the data
+flights
+```
+
+```{r}
+# summary() produces basic descriptive statistics for data.
+summary(flights)
+```
+
+### select() chooses variables
+
+
+```{r}
+# you can select variables by names
+select(flights, YEAR, APT_NAME, FLT_DEP_1)
+```
+
+
+```{r}
+# use the pipe operator for tidyverse style coding 
+flights %>%
+  select(YEAR, APT_NAME, FLT_DEP_1)
+```
+
+
+```{r}
+# you can select variables by positions
+flights %>%
+  select(c(1, 6, 8))
+```
+
+```{r}
+# names() displays the variable names
+names(flights)
+```
+
+```{r}
+# tidy-selection allows you to easily choose variables 
+# https://dplyr.tidyverse.org/reference/dplyr_tidy_select.html
+flights %>%
+  select(1:5)
+```
+
+
+```{r}
+# tidy-selection allows you to easily choose variables 
+flights %>%
+  select(contains("FLT"))
+```
+
+
+```{r}
+# tidy-selection allows you to easily choose variables 
+flights %>%
+  select(ends_with("NAME"))
+```
+
+```{r}
+# tidy-selection allows you to easily choose variables 
+flights %>%
+  select(starts_with("FLT") & contains("2"))
+```
+
+### filter() chooses rows
+
+
+```{r}
+# you need to specify a condition for filtering
+flights %>%
+  filter(APT_NAME == "Dresden")
+```
+
+
+```{r}
+# multiple conditions combine with AND by default
+flights %>%
+  filter(APT_NAME == "Dresden", MONTH_MON == "APR")
+```
+
+```{r}
+# | = OR
+flights %>%
+  filter(APT_NAME == "Dresden" | MONTH_MON == "APR")
+```
+
+### mutate() creates a new variable
+
+```{r}
+# new variable will be placed at the end of the existing variables
+flights %>%
+  mutate(my_flt_average = (FLT_DEP_1 + FLT_ARR_1)/2)
+```
+
+```{r}
+# we can choose the place for the new variable
+flights %>%
+  mutate(my_flt_average = (FLT_DEP_1 + FLT_ARR_1)/2, .before = APT_NAME)
+```
+
+
+### arrange() arrange rows 
+
+```{r}
+# by default, data are arranged in ascending order
+flights %>%
+  arrange(FLT_DEP_1)
+```
+
+
+```{r}
+# by default, data are arranged in ascending order
+flights %>%
+  arrange(desc(FLT_DEP_1))
+```
+
+```{r}
+# by default, data are arranged in ascending order
+flights %>%
+  arrange(APT_NAME, desc(FLT_DEP_1))
+```
+
+### summarize() summarizes a variable into a single number
+
+```{r}
+flights %>%
+  summarise(mean_FLT_DEP_1 = mean(FLT_DEP_1, na.rm = TRUE)) 
+```
+
+
+```{r}
+flights %>%
+  summarise(mean_FLT_DEP_1 = mean(FLT_DEP_1, na.rm = TRUE), sd_FLT_DEP_1 = sd(FLT_DEP_1, na.rm = TRUE)) 
+```
+
+
+### group_by() creates a grouped dataframe
+
+
+```{r}
+# Tidyverse functions will be applied to each group in a grouped dataframe
+flights %>%
+  group_by(APT_NAME) %>%
+  summarise(mean_FLT_DEP_1 = mean(FLT_DEP_1, na.rm = TRUE), sd_FLT_DEP_1 = sd(FLT_DEP_1, na.rm = TRUE)) 
+```
+
+```{r}
+# n() counts the number of rows
+flights %>%
+  group_by(STATE_NAME) %>%
+  summarise(n = n())
+```
+
+```{r}
+flights %>%
+  count(STATE_NAME)
+```
+
+
+
+## Practice
+
+```{r}
+flights
+```
+
+
+
+
+1. Which airport has the least records?
+
+
+```{r, include=FALSE}
+flights %>%
+  count(STATE_NAME, APT_NAME) %>%
+  arrange(n)
+```
+
+2. Find the STATE with the largest number of departures(FLT_DEP_1) across whole years? 
+
+
+```{r, include=FALSE}
+flights %>%
+  group_by(STATE_NAME) %>%
+  summarise(sum_FLT_DEP1 = sum(FLT_DEP_1, na.rm = TRUE)) %>%
+  arrange(desc(sum_FLT_DEP1))
+```
+
+
+3. In 2021, which day has the largest number of departures?
+(Hint: first filter rows with YEAR == 2020, then use group_by() with FLT_DATE with summarize())
+
+```{r, include=FALSE}
+flights %>%
+  filter(YEAR == 2020) %>%
+  group_by(FLT_DATE) %>%
+  summarize(sum_FLT_DEP1 = sum(FLT_DEP_1, na.rm = TRUE)) %>%
+  arrange(desc(sum_FLT_DEP1))
+```
+
+
+4. In 2020, find the most busy airport in terms of FLT_TOT_1?
+
+```{r, include=FALSE}
+flights %>%
+  filter(YEAR == 2020) %>%
+  group_by(APT_NAME) %>%
+  summarise(sum_FLT_TOT_1 = sum(FLT_TOT_1, na.rm = TRUE)) %>%
+  arrange(desc(sum_FLT_TOT_1))
+```
+
+
+
