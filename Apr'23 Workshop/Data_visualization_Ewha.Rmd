@@ -1,0 +1,362 @@
+---
+title: "Data visualization practice: ggplot2 practical use"
+
+subtitle: "Ewha GSIS Computational Social Science Workshop"
+
+author: "Iegor Vyshnevskyi"
+
+date: "April 1, 2023"
+
+---
+
+## Objectives 
+
+-   Studying the `ggplot2` package's basics
+-   Practicing creating some basic plots using `ggplot2`
+
+## Prerequisites
+
+- Type `packageVersion("dplyr")` to see if your `dplyr` package is up to date. Update the installed version by typing `update.packages("dplyr")` if the current version is less than 1.0.R might need to be restarted for it to work.  
+
+
+```{r}
+ifelse(packageVersion("dplyr") >= 1,
+  "The installed version of dplyr package is greater than or equal to 1.0.0", update.packages("dplyr")
+)
+
+if (!require("pacman")) install.packages("pacman")
+
+pacman::p_load(
+  tidyverse, # the tidyverse framework (incl. ggplot2)
+  here, # computational reproducibility
+  tidytuesdayR, # this loads the readme and all the datasets for the week of interest
+  ggthemes, # additional themes
+  ggrepel, # arranging ggplots
+  patchwork, # arranging ggplots
+  broom, # tidying model outputs
+  gtsummary, # summarizing data sets
+  ggfortify # extends ggplot2
+)
+```
+
+### Getting data
+
+```{r}
+
+# Either ISO-8601 date or year/week works!
+tuesdata <- tidytuesdayR::tt_load('2022-07-12')
+tuesdata <- tidytuesdayR::tt_load(2022, week = 28)
+
+flights <- tuesdata$flights
+
+# Or read in the data manually
+# flights <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-07-12/flights.csv')
+
+flights %>% tibble()
+
+```
+
+
+### See the data
+
+Data analysis in R may be done in a variety of ways.
+
+-   `head(flights)` / `tail(flights)` 
+
+-   `summary(flights)`
+
+-   `str(flights)`
+
+-   `glimpse(flights)`: similar to `str()` cleaner output
+
+-   `skim(flights)`: `str()` + `summary()` + more
+
+-   `tbl_summary(flights)`: see data in Viewer
+
+```{r}
+head(flights)
+
+glimpse(flights)
+
+```
+
+## Data Visualization with ggplot2
+
+-   The following theoretical material is adapted from the 2022 [Data Visualization](https://github.com/KDIS-DSPPM/data-visualization) course of Dr. Jae Yeon Kim.
+
+``` {r}
+
+help(ggplot)
+
+```
+
+
+### The grammar of graphics
+
+-   the grammar of graphics
+
+    -   data
+    -   aesthetic attributes (color, shape, size)
+    -   geometric objects (points, lines, bars)
+    -   stats (summary stats)
+    -   scales (map values in the data space)
+    -   coord (data coordinates)
+    -   facet (facetting specifications)
+
+No need to be concerned about unfamiliar terms. We use the "learning by doing" principle here.
+
+-   Workflow:
+
+    1.  Tidy data (what data) : `ggplot(data = )`
+    2.  Mapping (what relationships) : `aes(x = ,  y= )`
+    3.  Geom (how) : `geom_()` 
+    4.  Cooordinates and scales (how to see)
+    5.  Labels and guides (how to guide) : `labs(),` `guides()`
+    6.  Themes (how to theme)
+    7.  Save files
+
+### mapping and geom
+
+-   `aes` (aesthetic mappings or aesthetics) tells which variables (x, y) in your data should be represented by which visual elements (color, shape, size) in the plot.
+
+-   `geom_` tells the type of plot you are going to use
+
+### basic aes (x , y)
+
+```{r}
+
+# Create a table for the airport of Antwerp 
+df <- flights[flights$APT_NAME %in% "Antwerp", ]
+
+#Line plot
+g <- ggplot(data = df, 
+    mapping =   aes(x = FLT_DATE, 
+           y = FLT_DEP_1)) 
+
+g
+
+g + geom_point() # add points
+
+g + geom_point()+ 
+  geom_smooth() # geom_smooth has calculated a smoothed line;
+
+
+```
+
+### Univariate distribution
+
+- Types of univariate plots (Nolan and Stoudt 2021: 72): 
+
+    - Quantitative: rug plot, histogram, density curve, box-and-whisker plot, violin plot, normal quantile plot
+    - Qualitative: bar plot, dot chart, line plot, pie chart
+
+-   `geom_histogram()`: For the probability distribution of a continuous variable. Bins divide the entire range of values into a series of intervals (see [the Wiki entry](https://en.wikipedia.org/wiki/Histogram)).
+-   `geom_density()`: Also for the probability distribution of a continuous variable. It calculates a [kernel density estimate](https://en.wikipedia.org/wiki/Kernel_density_estimation) of the underlying distribution.
+
+#### Line plot
+
+```{r}
+
+# Create a table for the airport of Antwerp 
+df <- flights[flights$APT_NAME %in% "Antwerp", ]
+
+#Line plot
+g <- ggplot(data = df, 
+       aes(x = FLT_DATE, 
+           y = FLT_DEP_1)) +
+  geom_line()
+
+g
+
+g + geom_point() # add points
+
+g + geom_point()+ 
+  geom_smooth() # geom_smooth has calculated a smoothed line;
+
+
+```
+
+If we want to look for all Belgian airports:
+
+```{r}
+#Multiple line plot
+df_1 <- flights[flights$STATE_NAME %in% "Belgium", ]
+
+ggplot(df_1, 
+       aes(x = FLT_DATE, 
+           y = FLT_DEP_1, 
+           color = APT_NAME)) + # color by airports' name
+  geom_line()
+
+```
+#### Facetting 
+
+```{r}
+df_1 <- flights[flights$STATE_NAME %in% "Belgium", ]
+
+ggplot(df_1, 
+       aes(x = FLT_DATE, 
+           y = FLT_DEP_1, 
+           color = APT_NAME)) + # color by airports' name
+  geom_line() +
+  facet_wrap(~APT_NAME) # facetting
+  
+```
+
+
+#### Bar plot
+
+```{r}
+# one country case
+ggplot(df_1,
+       aes(x = FLT_DATE, y = FLT_DEP_1))+
+  geom_bar(aes(fill = APT_NAME), stat = "identity") # The argument fill = "APT_NAME" gives color fill for bars. The argument stat = "identity" tells ggplot2 to use the actual data values as the heights of the bars, rather than calculating a summary statistic such as count or proportion.
+
+```
+
+#### Grouped bar chart
+
+```{r}
+# one country case
+ggplot(df_1,
+       aes(x = FLT_DATE, y = FLT_DEP_1))+
+  geom_bar(aes(fill = APT_NAME), stat = "identity", position = "dodge") # dodging preserves the vertical position of an geom while adjusting the horizontal position.
+
+```
+
+#### Plot customization 
+
+```{r}
+
+ggplot(df_1,
+       aes(FLT_DATE, FLT_DEP_1, 
+           colour = APT_NAME, 
+           group = APT_NAME))+
+  geom_line()+
+  #add labels
+  labs(title = "Passengers departing from Belgium airports (2016-2022)",
+       x = "Airport name", y = "Number of IFR departures")+
+  #customize the background
+  theme_bw()+
+  #modify the appearance of the x-axis labels
+  #rotates the labels by 45 degrees
+  theme(axis.text.x=element_text(angle = 45, 
+                                 #adjusts the vertical justification of the labels
+                                 vjust = 1,  
+                                 #adjusts the horizontal justification of the labels
+                                 hjust = 1))+
+  #change the location of the title
+  theme(plot.title = element_text(hjust = 1))+
+  #change the location of the legend
+  theme(legend.position = c(0.1, 0.8),
+        #modify the background of the legend box
+        legend.box.background = element_rect(),
+        #remove the borders of the plot
+        panel.border = element_blank(),
+        #remove the major grid lines from the plot panel
+        panel.grid.major = element_blank(),
+        #remove the minor grid lines from the plot panel
+        panel.grid.minor = element_blank() )
+
+```
+
+#### Line plot using group by() and summary() to aggregate  data.
+
+```{r}
+
+flights_gr <- flights %>%
+  group_by(FLT_DATE) %>%
+  summarize(TOTAL_FLT_DEP_1 = sum(FLT_DEP_1)) 
+
+flights_gr
+
+ggplot(flights_gr, aes(x = FLT_DATE, y = TOTAL_FLT_DEP_1)) +
+  geom_line()+
+  # add average line when removing missing values
+  geom_hline(yintercept = mean(flights_gr$TOTAL_FLT_DEP_1, na.rm=TRUE), color="red")+
+#add labels
+labs(title = "Passengers departing worldwide (2016-2022)",
+     x = "Date", y = "Number of IFR departures")+
+  #customize the background
+  theme_economist()+
+  #modify the appearance of the x-axis labels
+  #rotates the labels by 45 degrees
+  theme(axis.text.x=element_text(angle = 45, 
+                                 #adjusts the vertical justification of the labels
+                                 vjust = 1,  
+                                 #adjusts the horizontal justification of the labels
+                                 hjust = 1))+
+  #change the location of the title
+  theme(plot.title = element_text(hjust = 1))+
+  #change the location of the legend
+  theme(#remove the borders of the plot
+        panel.border = element_blank(),
+        #remove the major grid lines from the plot panel
+        panel.grid.major = element_blank(),
+        #remove the minor grid lines from the plot panel
+        panel.grid.minor = element_blank() )
+
+
+```
+
+
+#### Histogram
+
+```{r}
+
+ggplot(
+  data = subset(flights, STATE_NAME %in% "Belgium"),
+  mapping = aes(x = FLT_DEP_1, fill = APT_NAME)
+) +
+  geom_histogram(bins = 20, alpha = 0.7) +
+  scale_fill_viridis_d() +
+  theme_wsj()
+    
+```
+
+
+#### Density
+
+```{r}
+
+ggplot(
+    data = subset(flights, STATE_NAME %in% "Belgium"),
+  aes(x = FLT_DEP_1, fill = APT_NAME, color = APT_NAME)) +
+  geom_density(alpha = 0.3) +
+  scale_color_viridis_d() +
+  scale_fill_viridis_d()+
+  theme_bw()
+
+```
+
+### Bivariate distributions
+
+- Types of bivariate plots (Nolan and Stoudt 2021: 72): 
+
+    - Both quantitative: scatter plot, smooth curve, contour plot, heat map
+    - Both qualitative: side-by-side bar plots, mosaic plot, overlaid lines
+    - Quantitative/Qualitative: overlaid density curves, side-by-side box-and-whisker plots, overlaid smooth curves, quantile-quantile plot
+
+```{r}
+g <- ggplot(data = flights, 
+            aes(x = FLT_ARR_1, 
+                y = FLT_DEP_1))
+
+# Scatter plot 
+g + geom_point()
+```
+
+#### Heatmap
+```{r}
+
+df_hm <- flights %>%
+  group_by(STATE_NAME) %>%
+  summarize(APT_NUMBER = n_distinct(APT_NAME))%>%
+  remove_rownames %>% 
+  column_to_rownames(var="STATE_NAME")
+
+autoplot(scale(df_hm))
+
+```
+
+
