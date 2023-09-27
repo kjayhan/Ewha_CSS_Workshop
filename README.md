@@ -1,5 +1,7 @@
 Ewha GSIS Computational Social Science Workshop (organized by [Kadir Jun Ayhan](https://kjayhan.github.io))
 
+Oct'23 Workshop Program is available [here](https://docs.google.com/document/d/10lzCTamk1Ki4LZChdH2QFnw9pEP5ArK3XdyfktnrTTs/edit?usp=sharing)
+
 Apr'23 Workshop Program is available [here](https://docs.google.com/document/d/1O4snmc-jRLUzCuaeT6ppW3gzTezHcgLU7QKa5mvqazc/edit?usp=sharing)
 
 Nov'22 Workshop Program is available [here](https://docs.google.com/document/d/1pX-B_qKDJzx1DgzKeMCrBFuwY7pUyAcMpLvfOaYdFZU/edit?usp=sharing).
