@@ -1,0 +1,88 @@
+---
+title: "GSIS CSS Workshop (dplyr practice)"
+author: "Sunbok Lee"
+date: 2023-10-14
+output: html_document
+---
+
+### R vs Rstudio
+
+R is a workhorse and RStudio is a very useful interface (or Integrated Development Environment, IDE) to R. 
+
+### Tidyverse
+
+https://www.tidyverse.org/
+
+### Introduction to dplyr
+
+https://dplyr.tidyverse.org/
+
+### Data source
+
+The data for this practice come from TidyTuesday
+
+https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-08-04/readme.md
+  
+
+### Load packages
+
+```{r}
+# need to install packages before loading
+library(tidyverse)
+```
+
+
+### Import data
+
+```{r}
+energy_types <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-08-04/energy_types.csv')
+country_totals <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-08-04/country_totals.csv')
+```
+
+```{r}
+# display data
+energy_types
+```
+
+
+```{r}
+country_totals
+```
+
+
+
+### Practice problems 
+
+
+1. In 2016, which type of energy production was the largest one in Germany? (Use 'engery_types')
+
+
+2. In 2017, which country produced the largest amount of energy using Wind? (Use 'engery_types')
+
+
+3. In 2018, what was the total amount of energy (i.e., sum across all types of energy)that France produced? (Use 'energy_types)
+
+
+4. Calculate the total amount of energy for all countries and find the country that produced the smallest total amount of energy in 2016 (Use 'energy_types').
+
+
+5. (tidyr demonstration) 
+
+```{r}
+energy_types
+```
+
+
+```{r}
+energy_types_tidy <- energy_types %>%
+  pivot_longer(cols = c(`2016`, `2017`, `2018`), names_to = "year", values_to = "GWh")
+energy_types_tidy
+```
+
+```{r}
+energy_types_tidy %>%
+  group_by(country_name, year) %>%
+  summarise(m = sum(GWh))
+```
+
+
