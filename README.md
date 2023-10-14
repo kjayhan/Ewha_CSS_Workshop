@@ -8,4 +8,4 @@ Nov'22 Workshop Program is available [here](https://docs.google.com/document/d/1
 
 Sep'22 Workshop Program is available [here](https://docs.google.com/document/d/1tnFk9DVPVHHAqN4DlObV2vZ5b8D2-n4PjI5R8xSDc0w/edit?usp=sharing).
 
-The files for practice (Oct'23) are [under Apr'23 Workshop folder](https://github.com/kjayhan/Ewha_CSS_Workshop/tree/main/Oct'23%20Workshop).
+The files for practice (Oct'23) are [under Oct'23 Workshop folder](https://github.com/kjayhan/Ewha_CSS_Workshop/tree/main/Oct'23%20Workshop).
