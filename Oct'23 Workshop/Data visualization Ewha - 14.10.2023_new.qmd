@@ -1,0 +1,573 @@
+---
+title: "Data visualization practice: ggplot2 practical use"
+
+subtitle: "Ewha GSIS Computational Social Science Workshop"
+
+author: "Iegor Vyshnevskyi"
+
+date: "October 14, 2023"
+
+format: html
+toc: true
+toc-depth: 2
+toc-title: Contents
+number-sections: true
+number-depth: 3
+editor: visual
+---
+
+## Objectives
+
+-   Studying the `ggplot2` package's basics through telling a story with data
+-   Practicing creating some basic plots using `ggplot2`
+
+## Prerequisites
+
+-   Type `packageVersion("dplyr")` to see if your `dplyr` package is up to date. Update the installed version by typing `update.packages("dplyr")` if the current version is less than 1.0.R might need to be restarted for it to work.
+
+```{r}
+ifelse(packageVersion("dplyr") >= 1,
+  "The installed version of dplyr package is greater than or equal to 1.0.0", update.packages("dplyr")
+)
+
+if (!require("pacman")) install.packages("pacman")
+
+pacman::p_load(
+  tidyverse, # the tidyverse framework (incl. ggplot2)
+  here, # computational reproducibility
+  tidytuesdayR, # this loads the readme and all the datasets for the week of interest
+  ggthemes, # additional themes
+  ggrepel, # arranging ggplots
+  patchwork, # arranging ggplots
+  broom, # tidying model outputs
+  gtsummary, # summarizing data sets
+  ggfortify, # extends ggplot2
+  skimr, # summary statistics about variables in data frames
+  DataExplorer, # for data exploration process
+  envalysis, # for data exploration process
+  cowplot, # for combining plots
+  scales, # for percentage
+  ggrepel # for percentage
+)
+
+```
+
+### Getting data
+
+We work with [European energy](https://github.com/rfordatascience/tidytuesday/blob/master/data/2020/2020-08-04/readme.md) dataset from TidyTuesday project.
+
+```{r}
+
+# Either ISO-8601 date or year/week works!
+
+tuesdata <- tidytuesdayR::tt_load('2020-08-04')
+#tuesdata <- tidytuesdayR::tt_load(2020, week = 32)
+
+energy_types <- tuesdata$energy_types
+country_totals <- tuesdata$country_totals
+
+
+# Or read in the data manually
+#energy_types <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-08-04/energy_types.csv')
+#country_totals <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-08-04/country_totals.csv')
+
+energy_types %>% tibble()
+
+country_totals %>% tibble()
+
+```
+
+### See the data
+
+Data analysis in R may be done in a variety of ways.
+
+-   `head(energy_types)` / `tail(energy_types)`
+
+-   `summary(energy_types)`
+
+-   `str(energy_types)`
+
+-   `glimpse(energy_types)`: similar to `str()` cleaner output
+
+-   `skim(energy_types)`: `str()` + `summary()` + more
+
+-   `tbl_summary(energy_types)`: see data in Viewer
+
+```{r}
+head(energy_types)
+
+glimpse(energy_types)
+
+skim(country_totals)
+
+```
+
+```{r}
+
+# use DataExplorer power
+
+plot_str(tuesdata) # for a network
+
+plot_str(tuesdata, type = "r") # for a radial network
+
+introduce(energy_types) # get introduced to your data
+
+introduce(country_totals) # get introduced to your data
+
+plot_intro(energy_types) # visualize data
+
+plot_missing(energy_types) # visualize missing profile for each column
+
+#plot_bar(energy_types) # to visualize frequency distributions for all discrete features
+
+#plot_bar(energy_types, by = "type")
+
+plot_histogram(energy_types) # visualize distributions for all continuous variables
+
+```
+
+### Fixing missing data (if/when possible)
+
+```{r}
+# identify missing data
+energy_types %>% 
+  filter(is.na(country_name))
+
+# looks like UK is missing country_name - let's fix that
+energy_types <- energy_types %>% 
+  mutate(country_name = case_when(
+    country == "UK" ~ "United Kingdom",
+    TRUE ~ country_name
+  ))
+    
+# check again
+skimr::skim(energy_types)
+
+```
+
+```{r}
+
+# identify missing data
+country_totals %>% 
+  filter(is.na(country_name))
+
+# looks like UK is missing country_name - let's fix that
+country_totals <- country_totals %>% 
+  mutate(country_name = case_when(
+    country == "UK" ~ "United Kingdom",
+    TRUE ~ country_name
+  ))
+
+# check again
+skimr::skim(country_totals)
+
+```
+
+## Data Visualization with ggplot2
+
+-   The following material is adapted from the 2022 [Data Visualization](https://github.com/KDIS-DSPPM/data-visualization) course of Dr. Jae Yeon Kim, Brett C. Moxham illustrations to [European Energy (Tidy Tuesday)](https://brettmoxham.netlify.app/post/european-energy-tidy-tuesday/), and Mark Druffel illustrations to [European Energry. Tidy Tuesday analysis of European energy production from 2016 to 2018.](https://www.mark-druffel.com/posts/2021-08-13-european-energy/)
+
+```{r}
+
+help(ggplot)
+
+```
+
+### The grammar of graphics
+
+-   the grammar of graphics
+
+    -   data
+    -   aesthetic attributes (color, shape, size)
+    -   geometric objects (points, lines, bars)
+    -   stats (summary stats)
+    -   scales (map values in the data space)
+    -   coord (data coordinates)
+    -   facet (facetting specifications)
+
+No need to be concerned about unfamiliar terms. We use the "learning by doing" principle here.
+
+-   Workflow:
+
+    1.  Tidy data (what data) : `ggplot(data = )`
+    2.  Mapping (what relationships) : `aes(x = ,  y= )`
+    3.  Geom (how) : `geom_()`
+    4.  Cooordinates and scales (how to see)
+    5.  Labels and guides (how to guide) : `labs(),` `guides()`
+    6.  Themes (how to theme)
+    7.  Save files
+
+### Mapping and geom
+
+-   `aes` (aesthetic mappings or aesthetics) tells which variables (x, y) in your data should be represented by which visual elements (color, shape, size) in the plot.
+
+-   `geom_` tells the type of plot you are going to use
+
+### Empty plot
+
+```{r}
+# NB: In Energy Types, Level - either total, level 1 or level 2. Where level 2 makes up level 1 that makes up the total. So, we don't need to use level 2 for our analysis.
+
+# Final Energy energy_types
+energy_type_fin <- energy_types %>% 
+  filter(level != "Level 2")
+
+# Create an empty plot for the year 2018
+g1 <- energy_type_fin %>% 
+    select(-c(`2016`,`2017`)) %>% # remove 2016 and 2017 columns
+    ggplot(aes(country_name, `2018`)) # create an empty plot
+
+g1 # show the plot
+
+```
+
+### Basic plot aes (x , y) & geom
+
+```{r}
+# Create barplot for the year 2018
+g2 <- energy_type_fin %>% 
+  select(-c(`2016`,`2017`)) %>% 
+  ggplot(aes(x= country_name, y = `2018`, fill = type))+ # fill by type
+  geom_col() # geom_col() is a shortcut for geom_bar(stat = "identity")
+
+g2 # show the plot
+
+```
+
+Well, it is not very informative. Let's try to improve it.
+
+### Flipping axes
+
+```{r}
+
+# Create barplot for the year 2018 with flip
+g3 <- energy_type_fin %>% 
+  select(-c(`2016`,`2017`)) %>% 
+  ggplot(aes(x= country_name, y = `2018`, fill = type))+ 
+  geom_col()+
+  coord_flip() # flip the coordinates
+
+g3 # show the plot
+
+```
+
+### Ordering
+
+```{r}
+# Create table for ordering
+energy_total <- energy_type_fin %>% 
+  select(-c(`2016`, `2017`)) %>% # remove 2016 and 2017 columns
+  group_by(country_name) %>% # group by country
+  mutate(
+    energy_total = sum(`2018`)/1000, # calculate total energy consumption
+    `2018` = `2018`/1000 # divide by 1000 to get gigawatts
+  )
+
+energy_total
+
+# Create barplot for the year 2018 with ordering
+
+g4 <- energy_total %>% 
+  ggplot(aes(fct_reorder(country_name, energy_total), `2018`, fill = type))+ # reorder countries by total energy consumption
+  geom_col()+ # geom_col() is a shortcut for geom_bar(stat = "identity")
+  coord_flip() # flip the coordinates
+
+g4 # show the plot
+
+```
+
+### Adding theme, tytles, labels
+
+```{r}
+
+g5 <- energy_total %>% 
+  ggplot(aes(fct_reorder(country_name, energy_total), `2018`, fill = type))+ # reorder countries by total energy consumption
+  geom_col()+
+  coord_flip()+
+  theme_publish()+ # theme_publish() is a shortcut for theme_minimal() + theme(text = element_text(family = "Georgia")) + theme(plot.title = element_text(hjust = 0.5))
+  theme(
+    axis.title.y = element_blank(), # remove y axis title
+    axis.title.x = element_blank() # remove x axis title
+  )+   # remove y axis title
+  labs(
+    fill = "Total Energy Consumption by Production Method
+(Per 1000 Gigawatts)") # add legend title
+
+g5 # show the plot
+
+```
+
+It is better now. But we can improve it further.
+
+Let's say we want to see the share of each energy type in the total energy consumption.
+
+### A new chart for the share of each energy type in the total energy consumption
+
+```{r}
+
+# Create table for percentage
+energy_total_perc <- energy_total %>% 
+  group_by(country_name) %>% 
+  mutate(
+    perc = `2018`/energy_total
+  )
+
+energy_total_perc
+
+# Create barplot for the year 2018 with percentage
+
+g6 <- energy_total_perc %>%
+  ggplot(aes(fct_reorder(country_name, energy_total), perc, fill = type)) +
+  geom_col() +
+  coord_flip() +
+  theme_publish() +
+  theme(
+    axis.title.y = element_blank(), # remove y axis title
+  ) +
+  labs( 
+    y = "% of Energy Consumption by Production Method" # add y axis title
+  ) +
+  scale_y_continuous(labels = scales::percent_format())  # add percentage
+
+g6 # show the plot
+
+```
+
+So, now we can compare the share of each energy type in the total energy consumption for each country.
+
+One more step: let's combine the two plots.
+
+### Combining plots
+
+```{r}
+# adjust g5
+g7 <- energy_total %>% 
+  ggplot(aes(fct_reorder(country_name, energy_total), `2018`, fill = type)) +
+  geom_col() +
+  coord_flip() +
+  theme_publish() +
+  theme(
+    axis.title.y = element_blank(),
+    legend.position = c(0.8, 0.5), # move legend to the right and down
+    legend.text = element_text(size = 7) # decrease legend text size
+  ) +
+  labs(
+    y = "Total Energy Consumption by Production Method 
+    (Per 1000 Gigawatts)"
+  )
+
+# adjust g6
+g8 <- energy_total_perc %>%
+  ggplot(aes(fct_reorder(country_name, energy_total), perc, fill = type)) +
+  geom_col() +
+  coord_flip() +
+  theme_publish() +
+  theme(
+    axis.title.y = element_blank(),
+    legend.position = "none" # remove legend
+  ) +
+  labs( 
+    y = "Percentage of Energy Consumption 
+    by Production Method"
+  ) +
+  scale_y_continuous(labels = scales::percent_format())  # add percentage
+
+
+# combine plots
+plot_joined <-  cowplot::plot_grid(g7, g8, cols = 2)
+
+plot_joined
+
+# Save the plot as a PNG image
+#getwd() # check the working directory
+#setwd("C:/Users/ievys/Desktop/Workshop") # set the working directory
+
+ggsave(plot_joined, filename = "plot_joined.png")
+
+# Save the plot as a PDF file
+ggsave(plot_joined, filename = "plot_joined.pdf")
+
+```
+
+### One country story
+
+Let's see the energy consumption in Ukraine.
+
+```{r}
+# Create table for Ukraine
+
+energy_ukraine <- energy_type_fin %>% 
+  filter(country_name == "Ukraine") %>% # filter by Ukraine
+  pivot_longer( # long data
+    cols = contains("201", ignore.case = TRUE),
+    names_to = "year",
+    values_to = "gwh"
+  ) %>% 
+  mutate(
+    year = as.integer(stringr::str_remove(year, "x"),
+    energy_total = sum(gwh, na.rm = T))
+  ) %>%
+  arrange(desc(year), desc(gwh)) # Arrange by year and gwh in descending order
+
+energy_ukraine %>% tibble()
+
+# Create plot for Ukraine
+
+g9 <- energy_ukraine %>% 
+  ggplot(aes(year, gwh, fill = type)) +
+  geom_col() +
+  scale_y_continuous(labels = scales::label_number(scale = 1/1000000, suffix = "M")) + # divide by 1000000 to get gigawatts
+  labs(
+    title = "Ukraine power production",
+    subtitle = "Ukraine is heavily dependent on nuclear power",
+    y = "Power (GWh)",
+    x = "Year",
+    fill = "Type"
+  ) +
+  theme_publish() +
+  theme(legend.position = "bottom")
+
+
+# Save the plot as a PNG image
+ggsave(g9, filename = "g9.png")
+
+# Save the plot as a PDF file
+ggsave(g9, filename = "g9.pdf")
+
+g9 # show the plot
+
+
+# Pie chart for Ukraine for each year in percentage of total
+
+# Calculate percentage of total for each year
+energy_ukraine <- energy_ukraine %>%
+  group_by(year) %>%
+  mutate(percentage = round(gwh / sum(gwh) * 100, 1)) %>%
+  arrange(desc(percentage)) # Sort by percentage in descending order within each year
+
+# Create the plot
+g10 <- ggplot(energy_ukraine, aes(x = "", y = percentage, fill = reorder(type, -percentage))) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y") + # make it a pie chart
+  geom_text_repel(
+    aes(label = ifelse(percentage > 0.5, paste0(percentage, "%"), "")), # add labels for percentage > 0.5
+    position = position_stack(vjust = 0.2) # adjust labels position
+  ) +
+  facet_wrap(~year, nrow = 1) +
+  labs(
+    title = "Ukraine power production",
+    subtitle = "Ukraine is heavily dependent on nuclear power",
+    fill = "Type"
+  ) +
+  theme(
+    legend.position = "bottom",
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.line = element_blank()
+  )
+
+g10
+
+# Save the plot as a PNG image 
+ggsave(g10, filename = "g10.png")
+
+# Save the plot as a PDF file
+ggsave(g10, filename = "g10.pdf")
+
+```
+
+### Another story with data
+
+Let's see the agregate energy consumption in Europe.
+
+```{r}
+
+energy_types <- tuesdata$energy_types # load data
+
+# long and clean data
+energy_types <- energy_types %>% 
+  filter(level == "Level 1") %>% # remove level 2
+  pivot_longer(
+    cols = contains("201", ignore.case = TRUE), # pivot columns
+    names_to = "year", # new column name
+    values_to = "gwh" # new column name
+  ) %>% 
+  mutate(
+    country_name = if_else(is.na(country_name), "United Kingdom", country_name),
+    type = as_factor(type),
+    year = as.integer(stringr::str_remove(year, "x"))
+  )
+
+# total data
+energy_level1_types_totals <- energy_types %>%
+  group_by(type) %>% 
+  summarise(
+    gwh = sum(gwh, na.rm = T)
+  ) %>% 
+  mutate(pct_of_total = gwh / sum(gwh)) %>% 
+  ungroup()
+
+# total plot
+totals_by_type <- energy_level1_types_totals %>% 
+  mutate(type = fct_reorder(type, gwh)) %>%  
+  ggplot(aes(x = gwh, y = type)) +
+  geom_col() +
+  scale_x_continuous(labels = scales::label_number(scale = 1/1000000, suffix = "M")) +
+  geom_label(
+    aes(label = scales::label_percent()(pct_of_total)),
+    nudge_x = 290000,
+    size = 3,
+    label.size = .1,
+    label.padding = unit(0.2, "lines")
+  ) +
+  labs(
+    title = "European power production",
+    subtitle = "Dirty engergy (convential thermal) accounts for nearly half of all power produced ",
+    y = "Type",
+    x = "Total Power (gigawatt hours)"
+  ) +
+    theme_publish() 
+ 
+# plot by energy type
+totals_by_year <- energy_types %>% 
+  group_by(year) %>%
+  group_by(year, type) %>% 
+  summarise(
+    gwh = sum(gwh, na.rm = T),
+    .groups = "drop"
+  ) %>% 
+  mutate(
+    type = fct_reorder(type, -gwh, sum)
+  ) %>% 
+  ggplot(aes(x = year, y = gwh)) +
+  geom_col() +
+  scale_y_continuous(labels = comma) +
+  facet_wrap(~type, scales = "free_y") + # separation by type and free y axis
+  labs(
+    title = NULL,
+    subtitle = "Wind, solar, & geothermal are slowly taking a small share of overall production",
+    y = "Power (GWh)",
+    x = "Year",
+    fill = "Type"
+  ) +
+  theme_publish() +
+  theme(legend.position = "bottom")
+(totals_by_type / plot_spacer() / totals_by_year) +
+  plot_layout(heights = c(1, .1, 4))
+
+```
+
+### Some related powerful illustrations
+
+-   mstkolf, [TidyTuesday - European Energy](https://mstkolf.rbind.io/2020/08/11/tidytuesday-2020-week32/);
+-   Kelsey E. Gonzalez, [Tidy Tuesday: European Energy Consumption](https://kelseygonzalez.github.io/visualization/energy/);
+-   R Screencast, [TidyTuesday screencast: European Energy](https://www.rscreencasts.com/content_pages/european-energy);
+-   Schmidt Notes, [TidyTuesday: Energy Usage in Europe](https://www.schmidtynotes.com/blog/r/2020-08-16-energy_in_europe_tidytuesday/).
+
+## Credits
+
+1.  Dr. Jae Yeon Kim, [Data Visualization](https://github.com/KDIS-DSPPM/data-visualization);
+2.  Brett C. Moxham, [European Energy (Tidy Tuesday)](https://brettmoxham.netlify.app/post/european-energy-tidy-tuesday/);
+3.  Mark Druffel, [European Energry. Tidy Tuesday analysis of European energy production from 2016 to 2018.](https://www.mark-druffel.com/posts/2021-08-13-european-energy/).
